@@ -17,21 +17,19 @@ extern TIM_HandleTypeDef htim1;
 
 // Callback used by the TIM1 on period interrupt
 // Registered before starting timer1
+extern osEventFlagsId_t acqEventFlagsHandle;
+#define ACQ_FLAG_START (1U << 0)
 
 void tim1Callback( TIM_HandleTypeDef *htim ) {
 	HAL_GPIO_WritePin( IO10_GPIO_GPIO_Port, IO10_GPIO_Pin, GPIO_PIN_SET );
 	HAL_GPIO_WritePin( IO10_GPIO_GPIO_Port, IO10_GPIO_Pin, GPIO_PIN_RESET );
+	osEventFlagsSet(acqEventFlagsHandle, ACQ_FLAG_START);
 }
 
 // Declaration of queues, defined in main.c
 
 extern osMessageQueueId_t acquisitionQueueHandle;
 extern osMessageQueueId_t displayQueueHandle;
-
-//aggiunta mia
-extern osEventFlagsId_t acqEventFlagsHandle;
-
-#define ACQ_FLAG_START (1U << 0)
 
 void StartDefaultTask( void *argument ) {
 	HAL_TIM_RegisterCallback(&htim1, HAL_TIM_PWM_PULSE_FINISHED_CB_ID, tim1Callback);
@@ -50,8 +48,10 @@ void StartDefaultTask( void *argument ) {
 				osDelay( 500 );
 			}
 		} else if( getSwitch1() ) { // This must be filled by students, to perform requested functions
+			/*uint16_t t_encoded = (uint16_t) 2981;
+			acquisitionQueuePut(acquisitionQueueHandle, &t_encoded, 0U, 0U);*/
 			HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_1);
-			//avvia  il timer in m odalità PWM sul canale 1
+			//avvia  il timer in modalità PWM sul canale 1
 			while( getSwitch1() ){
 					uint16_t temperature;
 					osStatus_t status = osMessageQueueGet(acquisitionQueueHandle, &temperature, NULL, osWaitForever);

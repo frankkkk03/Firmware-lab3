@@ -21,9 +21,9 @@ static void lcdWriteTemperature (uint16_t t_tenths_kelvin){
 	uint8_t d0 = ( t_tenths_kelvin / 1000 ) % 10;
 
 	lcdWriteDigit('0' + d0, 0);
-	lcdWriteDigit('1' + d1, 1);
-	lcdWriteDigit('2' + d2, 2);
-	lcdWriteDigit('3' + d3, 3);
+	lcdWriteDigit('0' + d1, 1);
+	lcdWriteDigit('0' + d2, 2);
+	lcdWriteDigit('0' + d3, 3);
 
 	lcdUpdateDisplay();
 }

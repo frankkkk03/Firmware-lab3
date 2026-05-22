@@ -51,10 +51,10 @@ void StartAcquisitionTask( void *argument ) {
     if( HAL_ADC_Start(&hadc1) != HAL_OK){
     	continue;
     }
-    if( HAL_ADC_PollForConversion(&hadc1, ADC_TIMEOUT_MS) != HAL_OK) {
+    /*if( HAL_ADC_PollForConversion(&hadc1, ADC_TIMEOUT_MS) != HAL_OK) {
     	HAL_ADC_Stop(&hadc1);
-    	continue;
-    }
+    	continue;*/
+    HAL_ADC_PollForConversion(&hadc1, ADC_TIMEOUT_MS);
     uint32_t adc1 = HAL_ADC_GetValue(&hadc1);
     HAL_ADC_Stop(&hadc1);
 
@@ -62,10 +62,10 @@ void StartAcquisitionTask( void *argument ) {
     if( HAL_ADC_Start(&hadc2) != HAL_OK){
         	continue;
         }
-        if( HAL_ADC_PollForConversion(&hadc2, ADC_TIMEOUT_MS) != HAL_OK) {
+        /*if( HAL_ADC_PollForConversion(&hadc2, ADC_TIMEOUT_MS) != HAL_OK) {
         	HAL_ADC_Stop(&hadc2);
-        	continue;
-        }
+        	continue;*/
+  	  HAL_ADC_PollForConversion(&hadc2, ADC_TIMEOUT_MS);
         uint32_t adc2 = HAL_ADC_GetValue(&hadc2);
         HAL_ADC_Stop(&hadc2);
 
