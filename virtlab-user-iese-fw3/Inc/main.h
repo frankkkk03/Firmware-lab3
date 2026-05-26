@@ -126,8 +126,8 @@ void Error_Handler(void);
 #define IO9_TIM1_CH1_GPIO_Port GPIOE
 #define IO10_GPIO_Pin LL_GPIO_PIN_10
 #define IO10_GPIO_GPIO_Port GPIOE
-#define IO11_Pin LL_GPIO_PIN_11
-#define IO11_GPIO_Port GPIOE
+#define HEATER_CTRL_Pin LL_GPIO_PIN_11
+#define HEATER_CTRL_GPIO_Port GPIOE
 #define IO12_Pin LL_GPIO_PIN_12
 #define IO12_GPIO_Port GPIOE
 #define IO13_Pin LL_GPIO_PIN_13

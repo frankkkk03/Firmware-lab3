@@ -15,14 +15,22 @@
 
 extern TIM_HandleTypeDef htim1;
 
-// Callback used by the TIM1 on period interrupt
-// Registered before starting timer1
+/*Event flags object defined in acquisition.c
+ * The callback sets the flag: the acquisition task waits on it
+ * ACQ_FLAG_START is the same constant placed in acquisition.c, it selects
+ * bit 0 of the event flags objects*/
 extern osEventFlagsId_t acqEventFlagsHandle;
 #define ACQ_FLAG_START (1U << 0)
 
+/*TIM1 PWM callback. Runs in an interrupt context.
+ * TIM1 is configured in PWM mode on channel 1, so the enabled interrupt invokes the PWM
+ * pulse-finished callback once per timer period*/
 void tim1Callback( TIM_HandleTypeDef *htim ) {
+	/*Short GPIO pulse on IO10*/
 	HAL_GPIO_WritePin( IO10_GPIO_GPIO_Port, IO10_GPIO_Pin, GPIO_PIN_SET );
 	HAL_GPIO_WritePin( IO10_GPIO_GPIO_Port, IO10_GPIO_Pin, GPIO_PIN_RESET );
+
+	/*Wake up the acquisition task*/
 	osEventFlagsSet(acqEventFlagsHandle, ACQ_FLAG_START);
 }
 
@@ -30,9 +38,14 @@ void tim1Callback( TIM_HandleTypeDef *htim ) {
 
 extern osMessageQueueId_t acquisitionQueueHandle;
 extern osMessageQueueId_t displayQueueHandle;
+/*Actuation queue*/
+extern osMessageQueueId_t actuationQueueHandle;
 
 void StartDefaultTask( void *argument ) {
+
+	/*Register the callback for the TIM1 PWM pulse-finished event*/
 	HAL_TIM_RegisterCallback(&htim1, HAL_TIM_PWM_PULSE_FINISHED_CB_ID, tim1Callback);
+
 	while( 1 ) {
 		if( getSwitch0() ) { // Blink LEDs
 			while( getSwitch0() ) {
@@ -47,20 +60,42 @@ void StartDefaultTask( void *argument ) {
 				led3( OFF );
 				osDelay( 500 );
 			}
-		} else if( getSwitch1() ) { // This must be filled by students, to perform requested functions
-			/*uint16_t t_encoded = (uint16_t) 2981;
-			acquisitionQueuePut(acquisitionQueueHandle, &t_encoded, 0U, 0U);*/
+		} else if( getSwitch1() ) {
+			/*Starts the timer in PWM mode on channel 1
+			 * From now on tim1Callback hits periodically and drives the acquisition task
+			 * through the event flag*/
 			HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_1);
-			//avvia  il timer in modalità PWM sul canale 1
 			while( getSwitch1() ){
+					uint16_t temperature;
+					/*Block until a new sample arrives from the acquisition task,
+					 * put the value in the acquisitionQueue in 'temperature' variable*/
+					osStatus_t status = osMessageQueueGet(acquisitionQueueHandle, &temperature, NULL, osWaitForever);
+					if(status == osOK){
+						/*Load the 'temperature value' into the displayQueue*/
+						osMessageQueuePut(displayQueueHandle, &temperature, 0U, 0U);
+					}
+				}
+				/*When the switch is released, the timer is stopped*/
+				HAL_TIM_PWM_Stop_IT(&htim1, TIM_CHANNEL_1);
+
+				/*For Firmware-LAB4 a new switch is used, which performs the same
+				 *operation as the last but here the actuation queue is filled too
+				 *with the temperature value */
+		} else if (getSwitch2()) {
+				HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_1);
+
+				while( getSwitch2() ){
 					uint16_t temperature;
 					osStatus_t status = osMessageQueueGet(acquisitionQueueHandle, &temperature, NULL, osWaitForever);
 					if(status == osOK){
 						osMessageQueuePut(displayQueueHandle, &temperature, 0U, 0U);
+						osMessageQueuePut(actuationQueueHandle, &temperature, 0U, 0U);
 					}
 				}
 				HAL_TIM_PWM_Stop_IT(&htim1, TIM_CHANNEL_1);
-
+				/*Safety control: force the heater OFF on exit in case it was left ON
+				 * when the switch is released*/
+				HAL_GPIO_WritePin(HEATER_CTRL_GPIO_Port, HEATER_CTRL_Pin, GPIO_PIN_RESET);
 			}
 		}
 }

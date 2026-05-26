@@ -94,6 +94,18 @@ const osThreadAttr_t displayTask_attributes = {
   .stack_size = sizeof(displayTaskBuffer),
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for actuationTask */
+osThreadId_t actuationTaskHandle;
+uint32_t actuationTaskBuffer[ 1024 ];
+osStaticThreadDef_t actuationTaskControlBlock;
+const osThreadAttr_t actuationTask_attributes = {
+  .name = "actuationTask",
+  .cb_mem = &actuationTaskControlBlock,
+  .cb_size = sizeof(actuationTaskControlBlock),
+  .stack_mem = &actuationTaskBuffer[0],
+  .stack_size = sizeof(actuationTaskBuffer),
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* Definitions for acquisitionQueue */
 osMessageQueueId_t acquisitionQueueHandle;
 uint8_t acquisitionQueueBuffer[ 1 * sizeof( uint16_t ) ];
@@ -116,6 +128,17 @@ const osMessageQueueAttr_t displayQueue_attributes = {
   .mq_mem = &displayQueueBuffer,
   .mq_size = sizeof(displayQueueBuffer)
 };
+/* Definitions for actuationQueue */
+osMessageQueueId_t actuationQueueHandle;
+uint8_t actuationQueueBuffer[ 1 * sizeof( uint16_t ) ];
+osStaticMessageQDef_t actuationQueueControlBlock;
+const osMessageQueueAttr_t actuationQueue_attributes = {
+  .name = "actuationQueue",
+  .cb_mem = &actuationQueueControlBlock,
+  .cb_size = sizeof(actuationQueueControlBlock),
+  .mq_mem = &actuationQueueBuffer,
+  .mq_size = sizeof(actuationQueueBuffer)
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -135,6 +158,7 @@ static void MX_ADC2_Init(void);
 void StartDefaultTask(void *argument);
 void StartAcquisitionTask(void *argument);
 void StartDisplayTask(void *argument);
+void StartActuationTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -209,6 +233,9 @@ int main(void)
   /* creation of displayQueue */
   displayQueueHandle = osMessageQueueNew (1, sizeof(uint16_t), &displayQueue_attributes);
 
+  /* creation of actuationQueue */
+  actuationQueueHandle = osMessageQueueNew (1, sizeof(uint16_t), &actuationQueue_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -222,6 +249,9 @@ int main(void)
 
   /* creation of displayTask */
   displayTaskHandle = osThreadNew(StartDisplayTask, NULL, &displayTask_attributes);
+
+  /* creation of actuationTask */
+  actuationTaskHandle = osThreadNew(StartActuationTask, NULL, &actuationTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -688,9 +718,10 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 0;	//modificato da 0
+  //valori cambiati per avere F=10Hz
+  htim1.Init.Prescaler = 7999;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 65535;		//modificato da 65535
+  htim1.Init.Period = 999;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -755,8 +786,8 @@ static void MX_TIM1_Init(void)
 static void MX_GPIO_Init(void)
 {
   LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   LL_AHB2_GRP1_EnableClock(LL_AHB2_GRP1_PERIPH_GPIOE);
@@ -770,13 +801,15 @@ static void MX_GPIO_Init(void)
   LL_GPIO_ResetOutputPin(GPIOC, LED3_Pin|LED0_Pin|LED1_Pin|LED2_Pin);
 
   /**/
+  LL_GPIO_ResetOutputPin(HEATER_CTRL_GPIO_Port, HEATER_CTRL_Pin);
+
+  /**/
   LL_GPIO_SetOutputPin(IO10_GPIO_GPIO_Port, IO10_GPIO_Pin);
 
   /**/
   GPIO_InitStruct.Pin = IO2_Pin|IO3_Pin|IO4_Pin|IO5_Pin
-                          |IO6_Pin|IO7_Pin|IO8_Pin|IO11_Pin
-                          |IO12_Pin|IO13_Pin|IO14_Pin|IO0_Pin
-                          |IO1_Pin;
+                          |IO6_Pin|IO7_Pin|IO8_Pin|IO12_Pin
+                          |IO13_Pin|IO14_Pin|IO0_Pin|IO1_Pin;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
   LL_GPIO_Init(GPIOE, &GPIO_InitStruct);
@@ -816,6 +849,14 @@ static void MX_GPIO_Init(void)
   LL_GPIO_Init(IO10_GPIO_GPIO_Port, &GPIO_InitStruct);
 
   /**/
+  GPIO_InitStruct.Pin = HEATER_CTRL_Pin;
+  GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
+  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+  LL_GPIO_Init(HEATER_CTRL_GPIO_Port, &GPIO_InitStruct);
+
+  /**/
   GPIO_InitStruct.Pin = IO15_Pin;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
@@ -843,8 +884,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
   LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -905,6 +946,24 @@ __weak void StartDisplayTask(void *argument)
   /* USER CODE END StartDisplayTask */
 }
 
+/* USER CODE BEGIN Header_StartActuationTask */
+/**
+* @brief Function implementing the actuationTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartActuationTask */
+__weak void StartActuationTask(void *argument)
+{
+  /* USER CODE BEGIN StartActuationTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartActuationTask */
+}
+
 /**
   * @brief  Period elapsed callback in non blocking mode
   * @note   This function is called  when TIM17 interrupt took place, inside
@@ -918,7 +977,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM17) {
+  if (htim->Instance == TIM17)
+  {
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
@@ -937,8 +997,7 @@ void Error_Handler(void)
 
   /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.

@@ -6,6 +6,7 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../Src/acquisition.c \
+../Src/actuation.c \
 ../Src/application.c \
 ../Src/display.c \
 ../Src/freertos.c \
@@ -20,6 +21,7 @@ C_SRCS += \
 
 OBJS += \
 ./Src/acquisition.o \
+./Src/actuation.o \
 ./Src/application.o \
 ./Src/display.o \
 ./Src/freertos.o \
@@ -34,6 +36,7 @@ OBJS += \
 
 C_DEPS += \
 ./Src/acquisition.d \
+./Src/actuation.d \
 ./Src/application.d \
 ./Src/display.d \
 ./Src/freertos.d \
@@ -54,7 +57,7 @@ Src/%.o Src/%.su Src/%.cyclo: ../Src/%.c Src/subdir.mk
 clean: clean-Src
 
 clean-Src:
-	-$(RM) ./Src/acquisition.cyclo ./Src/acquisition.d ./Src/acquisition.o ./Src/acquisition.su ./Src/application.cyclo ./Src/application.d ./Src/application.o ./Src/application.su ./Src/display.cyclo ./Src/display.d ./Src/display.o ./Src/display.su ./Src/freertos.cyclo ./Src/freertos.d ./Src/freertos.o ./Src/freertos.su ./Src/io.cyclo ./Src/io.d ./Src/io.o ./Src/io.su ./Src/main.cyclo ./Src/main.d ./Src/main.o ./Src/main.su ./Src/stm32l4xx_hal_msp.cyclo ./Src/stm32l4xx_hal_msp.d ./Src/stm32l4xx_hal_msp.o ./Src/stm32l4xx_hal_msp.su ./Src/stm32l4xx_hal_timebase_tim.cyclo ./Src/stm32l4xx_hal_timebase_tim.d ./Src/stm32l4xx_hal_timebase_tim.o ./Src/stm32l4xx_hal_timebase_tim.su ./Src/stm32l4xx_it.cyclo ./Src/stm32l4xx_it.d ./Src/stm32l4xx_it.o ./Src/stm32l4xx_it.su ./Src/syscalls.cyclo ./Src/syscalls.d ./Src/syscalls.o ./Src/syscalls.su ./Src/sysmem.cyclo ./Src/sysmem.d ./Src/sysmem.o ./Src/sysmem.su ./Src/system_stm32l4xx.cyclo ./Src/system_stm32l4xx.d ./Src/system_stm32l4xx.o ./Src/system_stm32l4xx.su
+	-$(RM) ./Src/acquisition.cyclo ./Src/acquisition.d ./Src/acquisition.o ./Src/acquisition.su ./Src/actuation.cyclo ./Src/actuation.d ./Src/actuation.o ./Src/actuation.su ./Src/application.cyclo ./Src/application.d ./Src/application.o ./Src/application.su ./Src/display.cyclo ./Src/display.d ./Src/display.o ./Src/display.su ./Src/freertos.cyclo ./Src/freertos.d ./Src/freertos.o ./Src/freertos.su ./Src/io.cyclo ./Src/io.d ./Src/io.o ./Src/io.su ./Src/main.cyclo ./Src/main.d ./Src/main.o ./Src/main.su ./Src/stm32l4xx_hal_msp.cyclo ./Src/stm32l4xx_hal_msp.d ./Src/stm32l4xx_hal_msp.o ./Src/stm32l4xx_hal_msp.su ./Src/stm32l4xx_hal_timebase_tim.cyclo ./Src/stm32l4xx_hal_timebase_tim.d ./Src/stm32l4xx_hal_timebase_tim.o ./Src/stm32l4xx_hal_timebase_tim.su ./Src/stm32l4xx_it.cyclo ./Src/stm32l4xx_it.d ./Src/stm32l4xx_it.o ./Src/stm32l4xx_it.su ./Src/syscalls.cyclo ./Src/syscalls.d ./Src/syscalls.o ./Src/syscalls.su ./Src/sysmem.cyclo ./Src/sysmem.d ./Src/sysmem.o ./Src/sysmem.su ./Src/system_stm32l4xx.cyclo ./Src/system_stm32l4xx.d ./Src/system_stm32l4xx.o ./Src/system_stm32l4xx.su
 
 .PHONY: clean-Src
 
